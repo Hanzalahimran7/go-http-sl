@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    image: task_server # Replace with your actual application image
+    ports:
+      - "3000:3000"
+    environment:
+      - HOST=host.docker.internal
+      - PORT=5432
+      - USER=hanzalah
+      - DB=hanzalah
+      - PASSWORD=hanzalah123
