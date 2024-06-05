@@ -55,3 +55,64 @@ func (a *App) FindTaskById(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusFound)
 	json.NewEncoder(w).Encode(res)
 }
+
+func (a *App) DeleteTaskById(w http.ResponseWriter, r *http.Request) {
+	err := a.Store.DeleteByID(r.Context())
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
+}
+
+func (a *App) UpdateTaskByID(w http.ResponseWriter, r *http.Request) {
+	res, err := a.Store.GetByID(r.Context())
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+	var body struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Println(err)
+		return
+	}
+	if body.Status == "completed" {
+		now := time.Now().UTC()
+		res.CompletedAt = &now
+		res.Status = "completed"
+	} else if body.Status == "incomplete" {
+		res.CompletedAt = nil
+		res.Status = "incomplete"
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := a.Store.UpdateByID(r.Context(), res); err != nil {
+		log.Println(err)
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
+	json.NewEncoder(w).Encode(res)
+}

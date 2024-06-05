@@ -11,5 +11,5 @@ type Store interface {
 	List(context.Context) ([]model.Task, error)
 	GetByID(context.Context) (model.Task, error)
 	DeleteByID(context.Context) error
-	UpdateByID(context.Context) error
+	UpdateByID(context.Context, model.Task) error
 }

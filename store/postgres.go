@@ -70,7 +70,6 @@ func (p *Postgres) List(context.Context) ([]model.Task, error) {
 }
 func (p *Postgres) GetByID(ctx context.Context) (model.Task, error) {
 	id := ctx.Value("taskID")
-	fmt.Println(id)
 	task := model.Task{}
 	if err := p.db.QueryRow("SELECT * from tasks where id = $1", id).Scan(
 		&task.ID,
@@ -80,14 +79,37 @@ func (p *Postgres) GetByID(ctx context.Context) (model.Task, error) {
 		&task.CreatedAt,
 		&task.CompletedAt,
 	); err != nil {
-		// if err == sql.ErrNoRows {
-		// 	return model.Task{}, fmt.Errorf("id %s not present", id)
-		// }
-		// return model.Task{}, fmt.Errorf(err.Error())
 		return model.Task{}, err
 	}
 	return task, nil
 }
 
-func (p *Postgres) DeleteByID(context.Context) error { return nil }
-func (p *Postgres) UpdateByID(context.Context) error { return nil }
+func (p *Postgres) DeleteByID(ctx context.Context) error {
+	id := ctx.Value("taskID")
+	res, err := p.db.Exec("DELETE FROM tasks WHERE id=$1", id)
+	if err != nil {
+		return err
+	}
+	count, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return fmt.Errorf("Not deleted")
+	}
+	return nil
+}
+
+func (p *Postgres) UpdateByID(ctx context.Context, task model.Task) error {
+	id := ctx.Value("taskID")
+	query := `
+        UPDATE tasks
+        SET title = $1, description = $2, status = $3, completed_at = $4
+        WHERE id = $5
+    `
+	_, err := p.db.Exec(query, task.Title, task.Description, task.Status, task.CompletedAt, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}

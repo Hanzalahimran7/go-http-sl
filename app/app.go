@@ -41,8 +41,8 @@ func (a *App) LoadRoutes() {
 	a.Router.Route("/tasks/{id}", func(r chi.Router) {
 		r.Use(TaskIdMiddleWare)
 		r.Get("/", a.FindTaskById)
-		r.Delete("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusCreated) })
-		r.Put("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusCreated) })
+		r.Delete("/", a.DeleteTaskById)
+		r.Patch("/", a.UpdateTaskByID)
 	})
 }
 
