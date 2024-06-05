@@ -1,6 +1,7 @@
 package app
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -19,6 +20,7 @@ func (a *App) CreateTask(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	if taskRequest.Title == "" || taskRequest.Description == "" {
 		w.WriteHeader(http.StatusBadRequest)
+		log.Println(err)
 		return
 	}
 	task := model.Task{
@@ -29,11 +31,27 @@ func (a *App) CreateTask(w http.ResponseWriter, r *http.Request) {
 		Status:      "incomplete",
 		CompletedAt: nil,
 	}
-	task, err = a.Store.Create(r.Context(), task)
-	if err != nil {
+	if err := a.Store.Create(r.Context(), task); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(task)
+}
+
+func (a *App) FindTaskById(w http.ResponseWriter, r *http.Request) {
+	res, err := a.Store.GetByID(r.Context())
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+	w.WriteHeader(http.StatusFound)
+	json.NewEncoder(w).Encode(res)
 }

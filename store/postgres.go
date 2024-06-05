@@ -52,10 +52,42 @@ func (p *Postgres) RunMigrations(migrationPath string) error {
 	return nil
 }
 
-func (p *Postgres) Create(ctx context.Context, task model.Task) (model.Task, error) {
+func (p *Postgres) Create(ctx context.Context, task model.Task) error {
+	query := `
+        INSERT INTO tasks (id, title, description, status, created_at, completed_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id, created_at
+    `
+	_, err := p.db.ExecContext(ctx, query, task.ID, task.Title, task.Description, task.Status, task.CreatedAt, task.CompletedAt)
+	if err != nil {
+		return fmt.Errorf("failed to insert task: %w", err)
+	}
+	return nil
+}
+
+func (p *Postgres) List(context.Context) ([]model.Task, error) {
+	return []model.Task{}, nil
+}
+func (p *Postgres) GetByID(ctx context.Context) (model.Task, error) {
+	id := ctx.Value("taskID")
+	fmt.Println(id)
+	task := model.Task{}
+	if err := p.db.QueryRow("SELECT * from tasks where id = $1", id).Scan(
+		&task.ID,
+		&task.Title,
+		&task.Description,
+		&task.Status,
+		&task.CreatedAt,
+		&task.CompletedAt,
+	); err != nil {
+		// if err == sql.ErrNoRows {
+		// 	return model.Task{}, fmt.Errorf("id %s not present", id)
+		// }
+		// return model.Task{}, fmt.Errorf(err.Error())
+		return model.Task{}, err
+	}
 	return task, nil
 }
-func (p *Postgres) List(context.Context) ([]model.Task, error)     { return []model.Task{}, nil }
-func (p *Postgres) GetByID(context.Context) (model.Task, error)    { return model.Task{}, nil }
-func (p *Postgres) DeleteByID(context.Context) (string, error)     { return "", nil }
-func (p *Postgres) UpdateByID(context.Context) (model.Task, error) { return model.Task{}, nil }
+
+func (p *Postgres) DeleteByID(context.Context) error { return nil }
+func (p *Postgres) UpdateByID(context.Context) error { return nil }

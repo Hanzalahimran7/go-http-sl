@@ -7,9 +7,9 @@ import (
 )
 
 type Store interface {
-	Create(context.Context, model.Task) (model.Task, error)
+	Create(context.Context, model.Task) error
 	List(context.Context) ([]model.Task, error)
 	GetByID(context.Context) (model.Task, error)
-	DeleteByID(context.Context) (string, error)
-	UpdateByID(context.Context) (model.Task, error)
+	DeleteByID(context.Context) error
+	UpdateByID(context.Context) error
 }

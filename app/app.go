@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -41,11 +40,7 @@ func (a *App) LoadRoutes() {
 	a.Router.Post("/tasks", a.CreateTask)
 	a.Router.Route("/tasks/{id}", func(r chi.Router) {
 		r.Use(TaskIdMiddleWare)
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			id := ctx.Value("taskID")
-			log.Println("You want id", id)
-		})
+		r.Get("/", a.FindTaskById)
 		r.Delete("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusCreated) })
 		r.Put("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusCreated) })
 	})
@@ -71,11 +66,7 @@ func TimeOutMiddleware(next http.Handler) http.Handler {
 func TaskIdMiddleWare(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		taskID := chi.URLParam(r, "id")
-		id, err := strconv.Atoi(taskID)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-		}
-		ctx := context.WithValue(r.Context(), "taskID", id)
+		ctx := context.WithValue(r.Context(), "taskID", taskID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
