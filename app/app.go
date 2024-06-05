@@ -22,6 +22,10 @@ func Initialise() *App {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	posgresDb := store.ConnectToPostgresDb(os.Getenv("HOST"), os.Getenv("PORT"), os.Getenv("USER"), os.Getenv("PASSWORD"), os.Getenv("DB"))
+	err := posgresDb.RunMigrations("../store/migrations/create_tasks_table.sql")
+	if err != nil {
+		log.Fatal(err)
+	}
 	return &App{
 		Router: r,
 		Store:  posgresDb,
@@ -75,5 +79,3 @@ func TaskIdMiddleWare(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
-
-type apiFunc http.Handler

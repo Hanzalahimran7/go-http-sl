@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/hanzalahimran7/go-http-sl/model"
 	_ "github.com/lib/pq"
@@ -22,7 +24,6 @@ func ConnectToPostgresDb(host, port, user, password, dbname string) *Postgres {
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
@@ -30,6 +31,25 @@ func ConnectToPostgresDb(host, port, user, password, dbname string) *Postgres {
 	}
 	log.Println("Successfully connected to Database!")
 	return &Postgres{db: db}
+}
+
+func (p *Postgres) RunMigrations(migrationPath string) error {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+	fmt.Println(currentDir)
+	relativePath := "store/migrations/create_tasks_table.sql"
+	sqlFile, err := os.ReadFile(filepath.Join("/", currentDir, relativePath))
+	if err != nil {
+		return fmt.Errorf("failed to read migration file: %w", err)
+	}
+	_, err = p.db.Exec(string(sqlFile))
+	if err != nil {
+		return fmt.Errorf("failed to execute migration: %w", err)
+	}
+	log.Println("Migration executed successfully!")
+	return nil
 }
 
 func (p *Postgres) Create(ctx context.Context, task model.Task) (model.Task, error) {
