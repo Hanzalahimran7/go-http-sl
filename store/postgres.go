@@ -65,9 +65,34 @@ func (p *Postgres) Create(ctx context.Context, task model.Task) error {
 	return nil
 }
 
-func (p *Postgres) List(context.Context) ([]model.Task, error) {
-	return []model.Task{}, nil
+func (p *Postgres) List(ctx context.Context, limit int, page int) ([]model.Task, error) {
+	query := `
+        SELECT *
+        FROM tasks
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2
+    `
+	rows, err := p.db.QueryContext(ctx, query, limit, page)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query tasks: %w", err)
+	}
+	defer rows.Close()
+
+	var tasks []model.Task
+	for rows.Next() {
+		var task model.Task
+		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.CreatedAt, &task.CompletedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan task: %w", err)
+		}
+		tasks = append(tasks, task)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate over tasks: %w", err)
+	}
+	return tasks, nil
 }
+
 func (p *Postgres) GetByID(ctx context.Context) (model.Task, error) {
 	id := ctx.Value("taskID")
 	task := model.Task{}

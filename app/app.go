@@ -34,9 +34,7 @@ func Initialise() *App {
 func (a *App) LoadRoutes() {
 	a.Router.Use(middleware.Timeout(2 * time.Second))
 	a.Router.Use(TimeOutMiddleware)
-	a.Router.Get("/tasks", func(w http.ResponseWriter, r *http.Request) {
-
-	})
+	a.Router.Get("/tasks", a.GetAllTasks)
 	a.Router.Post("/tasks", a.CreateTask)
 	a.Router.Route("/tasks/{id}", func(r chi.Router) {
 		r.Use(TaskIdMiddleWare)

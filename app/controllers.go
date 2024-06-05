@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -114,5 +115,40 @@ func (a *App) UpdateTaskByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
+	json.NewEncoder(w).Encode(res)
+}
+
+func (a *App) GetAllTasks(w http.ResponseWriter, r *http.Request) {
+	page := r.URL.Query().Get("page")
+	limit := r.URL.Query().Get("limit")
+	log.Println(page, limit)
+	if page == "0" {
+		page = "1"
+	}
+	if limit == "0" {
+		limit = "10"
+	}
+	page_number, err := strconv.Atoi(page)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	limit_number, err := strconv.Atoi(limit)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	res, err := a.Store.List(r.Context(), limit_number, page_number)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+	w.WriteHeader(http.StatusFound)
 	json.NewEncoder(w).Encode(res)
 }
